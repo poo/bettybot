@@ -1,0 +1,11 @@
+<div style="background-color:[[ .DemoBodyBackgroundColor ]]">
+	<p>[[ .P ]]</p>
+	<ul>
+		[[ range $item := .Items ]]
+		<li>
+			<h4>[[ $item.Title ]]<h4>
+			<p>[[ $item.Content ]]</p>
+		</li>
+		[[ end ]]
+	</ul>
+</div>

@@ -1,0 +1,34 @@
+{
+	"outputDir": "./foobar",
+	"themes": [],
+	"globals": {},
+	"files": [{
+		"themes": ["demo.json"],
+		"globals": {},
+		"filename": "demo.html",
+		"modules": [{
+			"name": "demo-header.html",
+			"values": {
+				"H1": "I am the contents of the H1 tag",
+				"P": "I am the contents of the P tag"
+			}
+		},{
+			"name": "demo-body.html",
+			"values": {
+				"P": "I am the contents of the P tag in the body",
+				"Items":[{
+					"Title": "Item 1",
+					"Content": "Contents 1"
+				},{
+					"Title": "Item 2",
+					"Contents": "Contents 2"
+				}]
+			}
+		},{
+			"name": "demo-footer.html",
+			"values": {
+				"Footer": "I am the contents of the footer"
+			}
+		}]
+	}]
+}
