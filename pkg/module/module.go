@@ -8,6 +8,8 @@ import (
 	"log"
 	"path/filepath"
 	"text/template"
+
+	"github.com/gohugoio/hugo/parser"
 )
 
 // templates is a global var that will hold all of the parsed module templates
@@ -15,7 +17,8 @@ var templates = &template.Template{}
 
 var (
 	// moduleRoot points to the directory that contains the module templates
-	moduleRoot = "./data/modules/*"
+	//moduleRoot = "./data/modules/*"
+	moduleRoot = "./data/modules/"
 	// themesRoot points to the directory that contains the themes in the format of JSON files
 	themesRoot = "./data/themes/"
 )
@@ -23,23 +26,74 @@ var (
 // themes contain the json globals that can be referenced by a Modules
 var themes = map[string]map[string]interface{}{}
 
+var frontMatter = map[string]FrontMatter{}
+
 // Parse modules into a template
 // NOTE: init functions get run automatically at runtime before main is executed
 func init() {
 	// Use '[[  ]]' instead of the default '{{  }}'
 	templates = templates.Delims("[[", "]]")
 
-	// Parse all templates in the modules directory
-	var err error
-	templates, err = templates.ParseGlob(moduleRoot)
+	/*
+		// Parse all templates in the modules directory
+		var err error
+		templates, err = templates.ParseGlob(moduleRoot)
+		if err != nil {
+			log.Fatalf("Error parsing templates: %v", err)
+		}
+	*/
+
+	// Get the list of files in the modules directory
+	files, err := ioutil.ReadDir(moduleRoot)
 	if err != nil {
-		log.Fatalf("Error parsing templates: %v", err)
+		log.Fatalf("Error reading modules: %v", err)
+	}
+
+	for _, f := range files {
+		// Read the contents of the file
+		b, err := ioutil.ReadFile(moduleRoot + f.Name())
+		if err != nil {
+			log.Fatalf("Error reading theme '%s': %v", f.Name(), err)
+		}
+
+		// name used to lookup module
+		var name = f.Name()
+
+		// Parse front matter from module if the first char in the module is "{"
+		if len(b) > 0 && string(b)[0] == parser.JSONLead[0] {
+			buf := bytes.NewBuffer(b)
+			p, err := parser.ReadFrom(buf)
+			if err != nil {
+				log.Fatalf("Error getting front matter: %v", err)
+			}
+
+			fm := FrontMatter{}
+			m := p.FrontMatter()
+			if err := json.Unmarshal(m, &fm); err != nil {
+				log.Fatalf("Error parsing JSON front matter: %v", err)
+			}
+
+			// if a name was supplied in the front matter use it
+			if len(fm.Name) > 0 {
+				name = fm.Name
+			}
+
+			frontMatter[name] = fm
+
+			// trim front matter from module
+			b = b[len(m):]
+		}
+
+		templates, err = templates.New(name).Parse(string(b))
+		if err != nil {
+			log.Fatalf("Error parsing template: %v", err)
+		}
 	}
 
 	// Parse all themes in the themes directory
 	//
 	// Get the list of files in the themes directory
-	files, err := ioutil.ReadDir(themesRoot)
+	files, err = ioutil.ReadDir(themesRoot)
 	if err != nil {
 		log.Fatalf("Error reading themes: %v", err)
 	}
@@ -63,6 +117,17 @@ func init() {
 		// var named theme
 		themes[f.Name()] = theme
 	}
+}
+
+type Var struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"values"`
+}
+
+type FrontMatter struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Vars  []Var  `json:"vars"`
 }
 
 // Files represents a collection of Modules.
